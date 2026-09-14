@@ -1,468 +1,294 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PNK Shorts</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PNK Shorts</title>
+  
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD-your-api-key...",
+      authDomain: "pnkshorts-dbdce.firebaseapp.com",
+      projectId: "pnkshorts-dbdce",
+      storageBucket: "pnkshorts-dbdce.appspot.com",
+      messagingSenderId: "495458209735",
+      appId: "1:495458209735:web:23m..."
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    window.db = db;
+    window.storage = storage;
+    window.collection = collection;
+    window.addDoc = addDoc;
+    window.getDocs = getDocs;
+    window.updateDoc = updateDoc;
+    window.doc = doc;
+    window.increment = increment;
+    window.arrayUnion = arrayUnion;
+    window.ref = ref;
+    window.uploadBytes = uploadBytes;
+    window.getDownloadURL = getDownloadURL;
+  </script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background-color: #000; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; height: 100vh; overflow: hidden; }
     
-    <!-- Firebase SDKs (डेटाबेस और स्टोरेज के लिए) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+    /* Welcome Screen Style */
+    #welcomeScreen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; }
+    #welcomeScreen h1 { font-size: 24px; margin-bottom: 20px; color: #ff2a6d; }
+    #welcomeScreen input { width: 80%; max-width: 300px; padding: 12px; border-radius: 25px; border: 1px solid #444; background: #222; color: #fff; font-size: 16px; text-align: center; margin-bottom: 15px; outline: none; }
+    #welcomeScreen button { padding: 12px 30px; border-radius: 25px; border: none; background: linear-gradient(45deg, #ff2a6d, #00c3c3); color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDt7drZh5pk82W10Q...",
-            authDomain: "pnkshorts-8bdce.firebaseapp.com",
-            projectId: "pnkshorts-8bdce",
-            storageBucket: "pnkshorts-8bdce.appspot.com",
-            messagingSenderId: "959458269735",
-            appId: "1:959458269735:web:23a..."
-        };
+    .header { position: fixed; top: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 15px; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
+    .app-title { font-weight: bold; font-size: 18px; }
+    .feed-container { height: 100vh; width: 100vw; overflow-y: scroll; scroll-snap-type: y mandatory; }
+    .short-card { height: 100vh; width: 100vw; scroll-snap-align: start; position: relative; display: flex; justify-content: center; align-items: center; background: #111; }
+    .short-card video { height: 100%; width: 100%; object-fit: cover; }
+    
+    /* Right Side Actions */
+    .actions { position: absolute; right: 15px; bottom: 100px; display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 5; }
+    .action-btn { background: rgba(0,0,0,0.6); border: none; color: #fff; width: 45px; height: 45px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+    .action-btn span { font-size: 10px; margin-top: 2px; }
+    .like-btn { color: #fff; } /* Default white color */
+    .like-btn.liked { color: #ff2a6d; } /* Turns red/pink when liked */
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
+    /* Bottom Info & Follow */
+    .video-info { position: absolute; left: 15px; bottom: 30px; z-index: 5; max-width: 70%; }
+    .username { font-weight: bold; font-size: 16px; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
+    .follow-btn { background: #ff2a6d; color: white; border: none; padding: 3px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; font-weight: bold; }
+    .caption { font-size: 14px; color: #ddd; }
 
-        window.db = db;
-        window.storage = storage;
-        window.collection = collection;
-        window.addDoc = addDoc;
-        window.getDocs = getDocs;
-        window.updateDoc = updateDoc;
-        window.doc = doc;
-        window.increment = increment;
-        window.ref = ref;
-        window.uploadBytes = uploadBytes;
-        window.getDownloadURL = getDownloadURL;
+    /* Upload Button */
+    .upload-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 20; }
+    .upload-btn { background: linear-gradient(45deg, #ff2a6d, #00c3c3); color: white; border: none; padding: 12px 25px; border-radius: 25px; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 42, 109, 0.4); }
 
-        window.onload = function() {
-            let currentUserName = localStorage.getItem('pnk_username') || "";
-            if (currentUserName) {
-                document.getElementById('welcomeScreen').style.display = 'none';
-                document.getElementById('displayUsername').innerText = "@" + currentUserName;
-            }
-            fetchVideosFromFirebase();
-        };
-    </script>
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: #000;
-            color: #fff;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-        }
-
-        /* वेलकम स्क्रीन */
-        #welcomeScreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: #0b0b0b;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            padding: 20px;
-            text-align: center;
-        }
-
-        #welcomeScreen h1 {
-            color: #ff2a6d;
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-
-        #welcomeScreen p {
-            color: #aaa;
-            font-size: 14px;
-            margin-bottom: 25px;
-        }
-
-        #welcomeScreen input {
-            width: 80%;
-            max-width: 300px;
-            padding: 12px 15px;
-            border-radius: 25px;
-            border: 1px solid #444;
-            background: #1a1a1a;
-            color: #fff;
-            font-size: 16px;
-            outline: none;
-            text-align: center;
-            margin-bottom: 15px;
-        }
-
-        #welcomeScreen button {
-            background: linear-gradient(45deg, #ff2a6d, #d300c5);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 42, 109, 0.4);
-        }
-
-        /* टॉप हेडर */
-        .header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            z-index: 10;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-        }
-
-        .app-title {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 6px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
-            backdrop-filter: blur(5px);
-        }
-
-        /* शॉर्ट्स फीड */
-        .feed-container {
-            height: 100vh;
-            width: 100vw;
-            overflow-y: scroll;
-            scroll-snap-type: y mandatory;
-            scrollbar-width: none;
-        }
-
-        .feed-container::-webkit-scrollbar {
-            display: none;
-        }
-
-        .short-card {
-            height: 100vh;
-            width: 100vw;
-            scroll-snap-align: start;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #111;
-        }
-
-        video {
-            height: 100%;
-            width: 100%;
-            object-fit: cover;
-        }
-
-        /* दाईं ओर के एक्शन बटन्स (लाइक, कमेंट, शेयर, डाउनलोड) */
-        .action-sidebar {
-            position: absolute;
-            right: 15px;
-            bottom: 100px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            z-index: 5;
-        }
-
-        .action-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: white;
-            font-size: 11px;
-            cursor: pointer;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 8px;
-            border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            justify-content: center;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .action-item span {
-            margin-top: 2px;
-            font-size: 9px;
-        }
-
-        .like-btn {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        }
-
-        /* वीडियो की जानकारी */
-        .video-info {
-            position: absolute;
-            left: 15px;
-            bottom: 80px;
-            z-index: 5;
-            max-width: 75%;
-        }
-
-        .username {
-            font-weight: bold;
-            font-size: 15px;
-            margin-bottom: 6px;
-            color: #ff2a6d;
-        }
-
-        .caption {
-            font-size: 14px;
-            margin-bottom: 8px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-        }
-
-        .stats {
-            font-size: 12px;
-            color: #ccc;
-        }
-
-        /* सबसे नीचे फोन के बॉटम में अपलोड बटन */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-            display: flex;
-            justify-content: center;
-            padding: 15px;
-            z-index: 10;
-        }
-
-        .upload-btn-bottom {
-            background: linear-gradient(45deg, #ff2a6d, #d300c5);
-            color: white;
-            border: none;
-            padding: 12px 35px;
-            border-radius: 30px;
-            font-weight: bold;
-            font-size: 15px;
-            cursor: pointer;
-            box-shadow: 0 4px 20px rgba(255, 42, 109, 0.6);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        #fileInput {
-            display: none;
-        }
-    </style>
+    /* Comments Modal */
+    .comments-modal { position: fixed; bottom: -100%; left: 0; width: 100%; height: 50vh; background: #222; border-radius: 20px 20px 0 0; z-index: 100; transition: 0.3s ease; padding: 20px; display: flex; flex-direction: column; }
+    .comments-modal.active { bottom: 0; }
+    .comments-list { flex: 1; overflow-y: auto; margin-bottom: 10px; font-size: 14px; }
+    .comment-input-box { display: flex; gap: 10px; }
+    .comment-input-box input { flex: 1; padding: 10px; border-radius: 5px; border: none; }
+    .comment-input-box button { padding: 10px 15px; background: #00c3c3; border: none; color: white; border-radius: 5px; font-weight: bold; }
+  </style>
 </head>
 <body>
 
-    <!-- वेलकम स्क्रीन -->
-    <div id="welcomeScreen">
-        <h1>PNK Shorts</h1>
-        <p>शुरू करने से पहले कृपया अपना नाम दर्ज करें</p>
-        <input type="text" id="userNameInput" placeholder="अपना नाम लिखें..." autocomplete="off">
-        <br>
-        <button onclick="startApp()">शुरू करें</button>
+  <!-- Welcome / Name Input Screen -->
+  <div id="welcomeScreen">
+    <h1>Welcome to @PNK Shorts</h1>
+    <input type="text" id="usernameInput" placeholder="Enter your name...">
+    <button onclick="saveUsername()">Start App</button>
+  </div>
+
+  <div class="header">
+    <div class="app-title" id="displayUsername">@PNK Shorts</div>
+  </div>
+
+  <div class="feed-container" id="feedContainer">
+    <div style="display: flex; justify-content: center; align-items: center; height: 100%; color: #777;">
+      Loading videos... Please wait.
     </div>
+  </div>
 
-    <!-- टॉप हेडर -->
-    <div class="header">
-        <div class="app-title" id="displayUsername">PNK Shorts</div>
+  <div class="upload-container">
+    <button class="upload-btn" onclick="triggerUpload()">+ Upload Video</button>
+    <input type="file" id="videoFile" accept="video/*" style="display: none;" onchange="uploadVideo(this)">
+  </div>
+
+  <!-- Comments Popup Modal -->
+  <div class="comments-modal" id="commentsModal">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+      <h3>Comments</h3>
+      <button onclick="closeComments()" style="background:none; border:none; color:white; font-size:16px;">✕</button>
     </div>
-
-    <!-- वीडियो फीड -->
-    <div class="feed-container" id="feedContainer"></div>
-
-    <!-- सबसे नीचे फोन के बॉटम में अपलोड बटन -->
-    <div class="bottom-nav">
-        <button class="upload-btn-bottom" onclick="document.getElementById('fileInput').click()">
-            ➕ Upload Video
-        </button>
-        <input type="file" id="fileInput" accept="video/*" onchange="handleVideoUpload(event)">
+    <div class="comments-list" id="commentsList"></div>
+    <div class="comment-input-box">
+      <input type="text" id="commentInput" placeholder="Add a comment...">
+      <button onclick="postComment()">Send</button>
     </div>
+  </div>
 
-    <script>
-        function startApp() {
-            const inputVal = document.getElementById('userNameInput').value.trim();
-            if (inputVal === "") {
-                alert("कृपया अपना नाम दर्ज करें!");
-                return;
-            }
-            localStorage.setItem('pnk_username', inputVal);
-            document.getElementById('displayUsername').innerText = "@" + inputVal;
-            document.getElementById('welcomeScreen').style.display = 'none';
+  <script>
+    let currentVideoId = null;
+
+    window.onload = function() {
+      const savedUser = localStorage.getItem('pnk_username');
+      if (savedUser) {
+        document.getElementById('welcomeScreen').style.display = 'none';
+        document.getElementById('displayUsername').innerText = '@' + savedUser;
+      }
+      loadVideos();
+    };
+
+    function saveUsername() {
+      const name = document.getElementById('usernameInput').value.trim();
+      if (!name) {
+        alert("Please enter your name!");
+        return;
+      }
+      localStorage.setItem('pnk_username', name);
+      document.getElementById('welcomeScreen').style.display = 'none';
+      document.getElementById('displayUsername').innerText = '@' + name;
+    }
+
+    function triggerUpload() {
+      document.getElementById('videoFile').click();
+    }
+
+    async function uploadVideo(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const uploaderName = localStorage.getItem('pnk_username') || 'PNK Creator';
+      alert("Video upload started...");
+      try {
+        const storageRef = window.ref(window.storage, 'videos/' + Date.now() + '_' + file.name);
+        await window.uploadBytes(storageRef, file);
+        const downloadUrl = await window.getDownloadURL(storageRef);
+        
+        await window.addDoc(window.collection(window.db, "videos"), {
+          videoUrl: downloadUrl,
+          username: uploaderName,
+          likes: 0,
+          views: 0,
+          shares: 0,
+          comments: [],
+          timestamp: Date.now()
+        });
+        alert("Video uploaded successfully!");
+        location.reload();
+      } catch (error) {
+        console.error(error);
+        alert("Error uploading video!");
+      }
+    }
+
+    async function loadVideos() {
+      const container = document.getElementById('feedContainer');
+      try {
+        const querySnapshot = await window.getDocs(window.collection(window.db, "videos"));
+        if (querySnapshot.empty) {
+          container.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100%; color: #777;">No videos available! Upload your first short below.</div>`;
+          return;
         }
+        
+        container.innerHTML = "";
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const docId = docSnap.id;
 
-        // फायरबेस से दुनिया भर के वीडियो लोड करना
-        async function fetchVideosFromFirebase() {
-            try {
-                const querySnapshot = await window.getDocs(window.collection(window.db, "shorts"));
-                const container = document.getElementById('feedContainer');
-                
-                if (querySnapshot.empty) {
-                    container.innerHTML = `
-                        <div class="short-card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; color: #777; text-align: center; padding: 20px;">
-                            <p style="font-size: 16px; margin-bottom: 10px;">अभी कोई वीडियो नहीं है!</p>
-                            <p style="font-size: 13px;">नीचे दिए गए <b>'Upload Video'</b> बटन से पहली शॉर्ट अपलोड करें।</p>
-                        </div>`;
-                    return;
-                }
+          const card = document.createElement('div');
+          card.className = 'short-card';
+          card.innerHTML = `
+            <video src="${data.videoUrl}" loop playsinline onclick="this.paused ? this.play() : this.pause()"></video>
+            
+            <div class="video-info">
+              <div class="username">@${data.username || 'User'} <button class="follow-btn" onclick="alert('Successfully followed!')">Follow</button></div>
+              <div class="caption">PNK Shorts Video</div>
+              <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Views: <span id="view-${docId}">${data.views || 0}</span></div>
+            </div>
 
-                let html = '';
-                querySnapshot.forEach((docSnap) => {
-                    const vid = docSnap.data();
-                    const docId = docSnap.id;
-                    html += `
-                        <div class="short-card">
-                            <video src="${vid.url}" loop playsinline onclick="togglePlay(this)"></video>
-                            
-                            <!-- दाईं तरफ के एक्शन बटन्स -->
-                            <div class="action-sidebar">
-                                <div class="action-item" onclick="handleLike('${docId}')">
-                                    <button class="like-btn" id="heart-${docId}">🤍</button>
-                                    <span id="like-count-${docId}">${vid.likes || 0}</span>
-                                </div>
-                                <div class="action-item" onclick="alert('कमेंट सेक्शन जल्द आ रहा है!')">
-                                    💬
-                                    <span>${vid.comments || 0}</span>
-                                </div>
-                                <div class="action-item" onclick="shareVideo()">
-                                    🔗
-                                    <span>Share</span>
-                                </div>
-                                <div class="action-item" onclick="downloadAudio('${vid.url}')">
-                                    🎵
-                                    <span>Audio</span>
-                                </div>
-                                <div class="action-item" onclick="downloadVideo('${vid.url}')">
-                                    📥
-                                    <span>Save</span>
-                                </div>
-                            </div>
+            <div class="actions">
+              <button class="action-btn like-btn" id="like-btn-${docId}" onclick="likeVideo('${docId}')">❤️<span id="like-count-${docId}">${data.likes || 0}</span></button>
+              <button class="action-btn" onclick="openComments('${docId}')">💬<span>${(data.comments || []).length}</span></button>
+              <button class="action-btn" onclick="shareVideo('${data.videoUrl}')">↗️<span>Share</span></button>
+              <button class="action-btn" onclick="downloadMedia('${data.videoUrl}', 'video')">📥<span>Video</span></button>
+              <button class="action-btn" onclick="downloadMedia('${data.videoUrl}', 'audio')">🎵<span>Audio</span></button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
 
-                            <div class="video-info">
-                                <div class="username">${vid.username}</div>
-                                <div class="caption">${vid.caption}</div>
-                                <div class="stats">👁️ ${vid.views || 1} views · 💬 ${vid.comments || 0} comments</div>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                container.innerHTML = html;
-                
-                const firstVideo = container.querySelector('video');
-                if (firstVideo) {
-                    firstVideo.play().catch(e => console.log("Auto-play prevented"));
-                }
-            } catch (error) {
-                console.error("Error fetching videos: ", error);
-            }
-        }
-
-        // वीडियो को ऑनलाइन सर्वर पर अपलोड करना (ताकि दुनिया को दिखे)
-        async function handleVideoUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                alert("वीडियो ऑनलाइन अपलोड हो रही है, कृपया प्रतीक्षा करें...");
-                const currentUserName = localStorage.getItem('pnk_username') || "Pnk";
-                
-                try {
-                    const storageRef = window.ref(window.storage, 'shorts/' + Date.now() + '_' + file.name);
-                    const snapshot = await window.uploadBytes(storageRef, file);
-                    const downloadURL = await window.getDownloadURL(snapshot.ref);
-
-                    await window.addDoc(window.collection(window.db, "shorts"), {
-                        url: downloadURL,
-                        username: "@" + currentUserName,
-                        caption: file.name.split('.')[0] + " 🚀",
-                        likes: 0,
-                        comments: 0,
-                        views: 1,
-                        createdAt: Date.now()
-                    });
-
-                    alert("वीडियो सफलतापूर्वक दुनिया के लिए लाइव हो गई!");
-                    fetchVideosFromFirebase();
-                } catch (e) {
-                    console.error("Error uploading: ", e);
-                    alert("अपलोड करने में त्रुटि आई!");
-                }
-            }
-        }
-
-        function togglePlay(videoElement) {
-            if (videoElement.paused) {
-                videoElement.play();
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const videoTag = entry.target.querySelector('video');
+              videoTag.play().catch(e => console.log(e));
             } else {
-                videoElement.pause();
+              entry.target.querySelector('video').pause();
             }
-        }
+          });
+        }, { threshold: 0.6 });
 
-        function handleLike(docId) {
-            const heartBtn = document.getElementById(`heart-${docId}`);
-            const countSpan = document.getElementById(`like-count-${docId}`);
-            let currentLikes = parseInt(countSpan.innerText);
+        document.querySelectorAll('.short-card').forEach(card => observer.observe(card));
 
-            if (heartBtn.innerText === "🤍") {
-                heartBtn.innerText = "❤️";
-                countSpan.innerText = currentLikes + 1;
-            } else {
-                heartBtn.innerText = "🤍";
-                countSpan.innerText = currentLikes - 1;
-            }
-        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
 
-        function shareVideo() {
-            if (navigator.share) {
-                navigator.share({
-                    title: 'PNK Shorts',
-                    text: 'इस शानदार शॉर्ट्स को देखें!',
-                    url: window.location.href,
-                }).catch(console.error);
-            } else {
-                alert('लिंक कॉपी कर लिया गया है!');
-            }
-        }
+    async function likeVideo(docId) {
+      try {
+        const btn = document.getElementById(`like-btn-${docId}`);
+        const countSpan = document.getElementById(`like-count-${docId}`);
+        
+        // Toggle like color and increment count locally & in DB
+        btn.classList.add('liked');
+        const docRef = window.doc(window.db, "videos", docId);
+        await window.updateDoc(docRef, { likes: window.increment(1) });
+        
+        countSpan.innerText = parseInt(countSpan.innerText) + 1;
+      } catch(e) { console.log(e); }
+    }
 
-        function downloadVideo(url) {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'pnk_short.mp4';
-            a.target = '_blank';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
+    function shareVideo(url) {
+      if (navigator.share) {
+        navigator.share({ title: 'PNK Short', url: url }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(url);
+        alert("Link copied to clipboard!");
+      }
+    }
 
-        function downloadAudio(url) {
-            alert('ऑडियो डाउनलोड शुरू हो रहा है!');
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'pnk_audio.mp3';
-            a.target = '_blank';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-    </script>
+    function downloadMedia(url, type) {
+      alert(type === 'video' ? "Downloading video..." : "Preparing audio download link...");
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.download = type === 'video' ? 'pnk_short.mp4' : 'pnk_audio.mp3';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function openComments(docId) {
+      currentVideoId = docId;
+      document.getElementById('commentsModal').classList.add('active');
+      
+      // Load current video comments into modal
+      const commentsList = document.getElementById('commentsList');
+      commentsList.innerHTML = "Loading comments...";
+      
+      // Find comments from DOM or state if needed, simplified for modal view
+      commentsList.innerHTML = `<div style="color: #aaa; text-align: center; margin-top: 20px;">Write a comment below!</div>`;
+    }
+
+    function closeComments() {
+      document.getElementById('commentsModal').classList.remove('active');
+    }
+
+    async function postComment() {
+      const text = document.getElementById('commentInput').value;
+      if (!text || !currentVideoId) return;
+      try {
+        const docRef = window.doc(window.db, "videos", currentVideoId);
+        await window.updateDoc(docRef, {
+          comments: window.arrayUnion(text)
+        });
+        document.getElementById('commentInput').value = "";
+        alert("Comment posted successfully!");
+        closeComments();
+        loadVideos();
+      } catch(e) { console.log(e); }
+    }
+  </script>
 </body>
 </html>
